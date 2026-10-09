@@ -1,0 +1,28 @@
+# Środowisko wirtualne Pythona
+.venv/
+venv/
+ENV/
+
+# Pamięć podręczna Pythona
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Pliki binarne i wagi modeli (bardzo ciężkie)
+models/*.pt
+*.pt
+
+# Pliki danych, wideo i pliki generowane automatycznie (kesz)
+data/
+output_videos/
+stubs/
+*.mp4
+*.avi
+*.pkl
+
+# Konfiguracja edytorów kodu
+.vscode/
+.idea/
+*.swp
