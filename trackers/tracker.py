@@ -61,16 +61,25 @@ class Tracker:
         }
 
         for frame_num, detection in enumerate(detections):
-            cls_names = detection.names
-            cls_names_inv = {v:k for k,v in cls_names.items()}
+            # Normalizujemy nazwy klas do małych liter, aby uniknąć problemów typu 'Referee' vs 'referee'
+            cls_names = {k: v.lower() for k, v in detection.names.items()}
+            cls_names_inv = {v: k for k, v in cls_names.items()}
 
-            # Covert to supervision Detection format
+            # Pobieramy ID dla klas w sposób bezpieczny. 
+            # Jeśli model z HF nie ma np. klasy sędziego lub bramkarza, przypisze wartość -1 (brak dopasowania)
+            player_cls_id = cls_names_inv.get('player', cls_names_inv.get('person', -1))
+            referee_cls_id = cls_names_inv.get('referee', -1)
+            ball_cls_id = cls_names_inv.get('ball', cls_names_inv.get('sports ball', -1))
+            goalkeeper_cls_id = cls_names_inv.get('goalkeeper', -1)
+
+            # Convert to supervision Detection format
             detection_supervision = sv.Detections.from_ultralytics(detection)
 
-            # Convert GoalKeeper to player object
-            for object_ind , class_id in enumerate(detection_supervision.class_id):
-                if cls_names[class_id] == "goalkeeper":
-                    detection_supervision.class_id[object_ind] = cls_names_inv["player"]
+            # Convert GoalKeeper to player object (tylko jeśli goalkeeper istnieje w modelu)
+            if goalkeeper_cls_id != -1 and player_cls_id != -1:
+                for object_ind , class_id in enumerate(detection_supervision.class_id):
+                    if class_id == goalkeeper_cls_id:
+                        detection_supervision.class_id[object_ind] = player_cls_id
 
             # Track Objects
             detection_with_tracks = self.tracker.update_with_detections(detection_supervision)
@@ -84,17 +93,17 @@ class Tracker:
                 cls_id = frame_detection[3]
                 track_id = frame_detection[4]
 
-                if cls_id == cls_names_inv['player']:
+                if cls_id == player_cls_id and player_cls_id != -1:
                     tracks["players"][frame_num][track_id] = {"bbox":bbox}
                 
-                if cls_id == cls_names_inv['referee']:
+                if cls_id == referee_cls_id and referee_cls_id != -1:
                     tracks["referees"][frame_num][track_id] = {"bbox":bbox}
             
             for frame_detection in detection_supervision:
                 bbox = frame_detection[0].tolist()
                 cls_id = frame_detection[3]
 
-                if cls_id == cls_names_inv['ball']:
+                if cls_id == ball_cls_id and ball_cls_id != -1:
                     tracks["ball"][frame_num][1] = {"bbox":bbox}
 
         if stub_path is not None:
