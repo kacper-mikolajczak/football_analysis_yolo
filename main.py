@@ -66,7 +66,13 @@ def main():
             tracks['players'][frame_num][assigned_player]['has_ball'] = True
             team_ball_control.append(tracks['players'][frame_num][assigned_player]['team'])
         else:
-            team_ball_control.append(team_ball_control[-1])
+            # ZABEZPIECZENIE: Jeśli lista jest pusta (klatka 0) i nikt nie ma piłki, wpisz 0.
+            # W pozostałych przypadkach przepisz stan posiadania z poprzedniej klatki.
+            if len(team_ball_control) > 0:
+                team_ball_control.append(team_ball_control[-1])
+            else:
+                team_ball_control.append(0)
+                
     team_ball_control= np.array(team_ball_control)
 
 
